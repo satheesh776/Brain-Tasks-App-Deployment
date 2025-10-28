@@ -5,19 +5,22 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 886436956008.dkr.ecr.ap-south-1.amazonaws.com
-      - REPOSITORY_URI=886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
+      - echo Building Docker image...
       - docker build -t brain-tasks-app .
-      - docker tag brain-tasks-app:latest $REPOSITORY_URI:latest
+      - docker tag brain-tasks-app:latest 886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
   post_build:
     commands:
-      - echo Pushing the Docker image to ECR...
-      - docker push $REPOSITORY_URI:latest
-      - echo Writing image definitions file...
-      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:latest > imageDetail.json
+      - echo Pushing Docker image to ECR...
+      - docker push 886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
+      - echo Updating deployment in EKS...
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-tasks-cluster
+      - kubectl set image deployment/brain-tasks-deployment brain-tasks-container=886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
+      - echo Deployment updated successfully.
+
 artifacts:
   files:
-    - imageDetail.json
+    - deployment.yaml
+    - service.yaml
+
