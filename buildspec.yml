@@ -10,15 +10,18 @@ phases:
       - echo Building Docker image...
       - docker build -t brain-tasks-app .
       - docker tag brain-tasks-app:latest 886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
-post_build:
-  commands:
-    - echo Updating kubeconfig for EKS...
-    - aws eks update-kubeconfig --region ap-south-1 --name brain-tasks-cluster
-    - echo Deploying new image to EKS...
-    - kubectl set image deployment/brain-tasks-deployment brain-tasks-container=886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
+  post_build:
+    commands:
+      - echo Pushing Docker image to ECR...
+      - docker push 886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
+      - echo Deploying to EKS cluster...
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-tasks-cluster
+      - kubectl set image deployment/brain-tasks-deployment brain-tasks-container=886436956008.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest --namespace default
+      - kubectl rollout status deployment/brain-tasks-deployment --namespace default
 
 artifacts:
   files:
     - deployment.yaml
     - service.yaml
+
 
